@@ -23,7 +23,7 @@
  *
  */
 
-var geohash = require('ngeohash');
+
 
 var redis_clientZSetName;
 var redis_client;
@@ -31,8 +31,6 @@ var redis_client;
 var initialize = function(client, zSetName){
   redis_clientZSetName = zSetName;
   redis_client = client;
-
-  return this;
 };
 
 
@@ -194,7 +192,7 @@ var queryByRanges = function(ranges, options, callBack){
 
   for(i=0; i<ranges.length; i++){
     range = ranges[i];
-    multi.ZRANGEBYSCORE(zset, range[0], range[1]);
+    multi.ZRANGEBYSCORE(zset, range[0], range[1], 'withscores');
   }
 
   multi.exec(function(err, replies){
@@ -202,7 +200,7 @@ var queryByRanges = function(ranges, options, callBack){
     for(i=0; i< replies.length; i++){
       concatedReplies = concatedReplies.concat(replies[i]);
     }
-    if(typeof callBack === "function") callBack(err, concatedReplies);
+    if(callBack && typeof callBack === "function") callBack(err, concatedReplies);
   });
 };
 
@@ -260,6 +258,7 @@ var queryByBitDepth = function(lat, lon, radiusBitDepth, options, callBack){
   var ranges = getQueryRangesFromBitDepth(lat, lon, radiusBitDepth, bitDepth);
  
   queryByRanges(ranges, options, callBack);
+  
 };
 
 
@@ -398,7 +397,7 @@ var queryCoordinatesInRange = function(client, lat, lon, radius, callBack){
 
         var intersection = (replies[0].length < replies[1].length) ? intersect(lats, lons) : intersect(lons, lats);
 
-        if(typeof callBack == "function") callBack(err, intersection);
+        if(callBack && typeof callBack == "function") callBack(err, intersection);
       });
 };
 
@@ -439,21 +438,19 @@ function intersect(a, b){
 
 var geohashDistance = {
   'initialize': initialize,
-
   'getQueryRangesFromBitDepth':getQueryRangesFromBitDepth,  // will deprecate interface
   'getQueryRangesFromRadius':getQueryRangesFromRadius,      // will deprecate interface
   'queryByRanges': queryByRanges,                           // will deprecate interface
   'queryByBitDepth': queryByBitDepth,                       // will deprecate interface  
   'addNewCoordinate': addCoordinate,                        // will deprecate interface
-  
   'getMinMaxs': getMinMaxs,                                 // really just for testing
 
+  'query': queryByProximity,
   'addCoordinate': addCoordinate,
   'addCoordinates': addCoordinates,
   'removeCoordinate': removeCoordinate,
   'removeCoordinates': removeCoordinates,
-
-  'query': queryByProximity,  
+  
   'getQueryCache': getQueryRangesFromRadius,
   'queryWithCache': queryByRanges
 };
